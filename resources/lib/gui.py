@@ -127,7 +127,11 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
             if selected < 0:
                 return
             engine = engines[selected][1]
+<<<<<<< HEAD
             if not engine :
+=======
+            if not engine:
+>>>>>>> e1d0df718e1b2291b7bef41faeda1b790517d8a9
                 filename = xbmcgui.Dialog().browse(1, _(32000), 'files', '.torrent')
                 try:
                     f = open(filename, 'r')
@@ -157,12 +161,19 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
                 if selected < 0:
                     return
                 try:
+<<<<<<< HEAD
                     if (engine == search.T411) :
                         t = t411()
                         data = t.download(results[selected]['url'])
                         self.transmission.add(data)
                     else :
                         self.transmission.add_torrent(results[selected]['url'])
+=======
+                    if (selected == 10) :
+                        t = t411()
+                        results[selected]['url'] = t.download(results[selected]['url'])
+                    self.transmission.add_torrent(results[selected]['url'])
+>>>>>>> e1d0df718e1b2291b7bef41faeda1b790517d8a9
                 except:
                     xbmcgui.Dialog().ok(_(32000), _(32293))
                     return

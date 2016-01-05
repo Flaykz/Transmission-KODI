@@ -2,7 +2,11 @@
 import getpass
 import json
 import requests
+<<<<<<< HEAD
 import os, xbmc, xbmcgui
+=======
+
+>>>>>>> e1d0df718e1b2291b7bef41faeda1b790517d8a9
 HTTP_OK = 200
 API_URL = 'https://api.t411.in/%s'
 USER_FILE = 'user.json'
@@ -77,7 +81,11 @@ class T411(object):
                     if not block :
                         break
                     torrent_data += block
+<<<<<<< HEAD
                 return base64.b64encode(torrent_data).decode('utf-8')
+=======
+                return base64.b64encode(torrent_data)
+>>>>>>> e1d0df718e1b2291b7bef41faeda1b790517d8a9
         else :
             req = requests.post(API_URL % method, data=params, headers={'Authorization':self.user_credentials['token']})
 
