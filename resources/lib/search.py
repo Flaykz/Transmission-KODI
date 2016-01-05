@@ -1,6 +1,8 @@
 import sys
 import re
 import socket
+import requests
+import json
 from urllib2 import urlopen, Request, URLError, HTTPError
 from urllib import quote, quote_plus, urlencode
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
@@ -33,7 +35,7 @@ class Mininova(Search):
 class TPB(Search):
     def __init__(self):
         self.user_agent = 'Mozilla/5.0'
-        self.search_uris = ['https://thepiratebay.se/search/%s/',
+        self.search_uris = ['https://thepiratebay.pw/search/%s/',
                             'http://pirateproxy.net/search/%s/']
     def search(self, terms):
         torrents = []
@@ -185,9 +187,146 @@ class EZTV(Search):
             })
         return torrents
 
+class CPasBien(Search):
+    def __init__(self):
+        self.user_agent = 'Mozilla/5.0'
+        self.search_uri = 'http://www.cpasbien.pw/recherche/%s.html,trie-seeds-d'
+    def search(self, terms):
+        torrents = []
+        url = self.search_uri % quote(terms)
+        req = Request(url)
+        req.add_header('User-Agent', self.user_agent)
+        f = urlopen(req)
+        if not f:
+            raise Exception('Cloudfare bloque la connexion ?')
+        else :
+            soup = BeautifulStoneSoup(f.read())
+            for item in soup.findAll('a', {'class':'titre'}):
+                name = item.text.strip()
+                url = item['href']
+                div = item.findNext('div')
+                poid = div.text
+                div = item.findNext('div').findNext('div')
+                seeds = int(div.text)
+                div = item.findNext('div').findNext('div').findNext('div')
+                leechers = int(div.text)
+                torrents.append({
+                    'url': url,
+                    'name': name,
+                    'seeds': seeds,
+                    'leechers': leechers,
+                })
+            return torrents
+##        p = []
+##        if terms.find(' ') :
+##            p = terms.split(' ')
+##        else :
+##            p.append(terms)
+##        if p[0] == "series" or p[0] == "films" :
+##            if len(p) == 1:
+##                self.search_uri = 'http://www.cpasbien.pw/view_cat.php?categorie=%s'
+##                url = self.search_uri % p[0]
+##            else :
+##                self.search_uri = 'http://www.cpasbien.pw/view_cat.php?categorie=%s&page=%s'
+##                url = self.search_uri % (p[0],p[1])
+##        else :
+##            url = self.search_uri % '-'.join(terms.split(' '))
+##		hdr = {
+##			'User-Agent' : 'Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4',
+##			'Accept' : 'image/webp,*/*;q=0.8',
+##			'Accept-Language' : 'fr-FR,fr;q=0.8,en-US;q=0.6,en;q=0.4',
+##			'Connection' : 'keep-alive'
+##		}
+##        req = Request(url, headers=hdr)
+##        #f = urlopen(req).read()
+##        #f = urlopen(url)
+##		f = urlopen(req)
+##        soup = BeautifulSoup(f.read())
+##        for item in soup.findAll('a', {'class':'titre'}):
+##            name = item.text.strip()
+##            url = item['href']
+##            div = item.findNext('div')
+##            poid = div.text
+##            div = item.findNext('div').findNext('div')
+##            seeds = int(div.text)
+##            div = item.findNext('div').findNext('div').findNext('div')
+##            leechers = int(div.text)
+##			req = Request(url, headers=hdr)
+##            f2 = urlopen(req)
+##            soup2 = BeautifulSoup(f2.read())
+##            url = 'http://www.cpasbien.pw' + soup2.find('a', {'id':'telecharger'})['href']
+##            torrents.append({
+##                'url': url,
+##                'name': name,
+##                'seeds': seeds,
+##                'leechers': leechers,
+##            })
+##        return torrents
+        
+class GetStrike(Search):
+    def __init__(self):
+        self.search_uri = 'https://getstrike.net/api/torrents/search/?q=%s'
+    def search(self, terms):
+        torrents = []
+        url = self.search_uri % '+'.join(terms.split(' '))
+        hdr = {
+                    'User-Agent' : 'Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4',
+                    'Accept' : 'image/webp,*/*;q=0.8',
+                    'Accept-Language' : 'fr-FR,fr;q=0.8,en-US;q=0.6,en;q=0.4',
+                    'Connection' : 'keep-alive'
+                    }
+        req = Request(url, headers=hdr)
+        f = urlopen(req).read()
+        rep = json.loads(f)
+        nbRes = rep[0]['results']
+        for i in rep[1] :
+            torrents.append({
+                'url': i['download_link'],
+                'name': i['torrent_title'],
+                'seeds': i['seeds'],
+                'leechers': i['leechers'],
+            })
+        return torrents
+
+class T411(Search):
+    def __init__(self):
+        self.api_url = 'https://api.t411.in/%s'
+        self.api_file_credentials = 'api_credentials.json' 
+        try :
+            with open(self.api_file_credentials) as file_credentials :
+                self.user_credentials = json.loads(file_credentials.read())
+        except IOError as e :
+            print "no credentials files found"
+        except Exception as e :
+            print "Error while reading user credentials : %s." % e.message
+        #user = 'USER'
+        #password = 'PASSWORD'
+        #self._auth(user, password)
+
+    #def _auth(self, username, password) :
+    #    self.user_credentials = self.call('auth', {'username': username, 'password': password})
+
+    def call(self, method = '', params = None) :
+        if method == 'auth' :
+            req = requests.post(self.api_url % method, data=params)
+        #elif 'download' in method:
+        #    something to do
+        else :
+            req = requests.post(self.api_url % method, data=params, headers={'Authorization':self.user_credentials['token']})
+
+        if req.status_code == requests.codes.OK:
+            return req.json()  
+
+    def search(self, query) :
+        torrents = []
+        rep = self.call('torrents/search/%s' % query)
+        for torrent in rep['torrents'] :
+            torrents.append({"seeds":int(torrent['seeders']), "leechers":int(torrent['leechers']), "name":str(torrent['name']), "url":str(torrent['id'])})
+        return torrents
+
 if __name__ == '__main__':
-    sites = [Mininova(), TPB(), Kickass(), L337x(), YTS(), Lime(), EZTV()]
-    terms = 'transmission'
+    sites = [Mininova(), T411()]
+    terms = 'mad max'
     if len(sys.argv) > 1:
         terms = sys.argv[1]
     print 'Searching for "' + terms + '"'
@@ -195,8 +334,9 @@ if __name__ == '__main__':
         print site.__class__.__name__.center(79, '=')
         torrents = site.search(terms)
         print 'Total found = ' + str(len(torrents))
-        for counter, file in enumerate(torrents):
-            print '[{:3},{:3}] {:33} "{:33}"'.format(file['seeds'], file['leechers'],
-                                                     file['name'].encode('ascii', 'replace')[:33],
-                                                     file['url'][:33])
-            if counter == 9: break
+        counter = 0
+        for torrent in torrents:
+            counter = counter + 1
+            print "seeds :" + str(torrent['seeds']) + " leechers: " + str(torrent['leechers']) + " name: " + str(torrent['name']) + " url: " + str(torrent['url'])
+            if (counter == 10): 
+                break

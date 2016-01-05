@@ -1,11 +1,11 @@
-# XBMC Media Center language file
+# KODI Media Center language file
 # Addon Name: Transmission
 # Addon id: script.transmission
-# Addon version: 0.7.5
-# Addon Provider: Correl Roush
+# Addon version: 0.8.0
+# Addon Provider: BROUSTE David
 msgid ""
 msgstr ""
-"Project-Id-Version: XBMC-Addons\n"
+"Project-Id-Version: KODI-Addons\n"
 "Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "POT-Creation-Date: 2014-06-04 04:09+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -127,7 +127,19 @@ msgctxt "#32208"
 msgid "Search EZTV"
 msgstr ""
 
-#empty strings from id 32209 to 32289
+msgctxt "#32209"
+msgid "Search CPasBien"
+msgstr ""
+
+msgctxt "#32210"
+msgid "Search GetStrike"
+msgstr ""
+
+msgctxt "#32211"
+msgid "Search T411"
+msgstr ""
+
+#empty strings from id 32212 to 32289
 
 msgctxt "#32290"
 msgid "Searching..."

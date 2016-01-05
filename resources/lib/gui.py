@@ -118,6 +118,9 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
                 (_(32206), search.YTS),
                 (_(32207), search.Lime),
                 (_(32208), search.EZTV),
+                (_(32209), search.CPasBien),
+                (_(32210), search.GetStrike),
+                (_(32211), search.T411),
             ]
             selected = xbmcgui.Dialog().select(_(32000), [i[0] for i in engines])
             if selected < 0:
@@ -153,6 +156,10 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
                 if selected < 0:
                     return
                 try:
+                    if (engine == search.T411) :
+                        xbmcgui.Dialog().ok("Error", "T411")
+                    else :
+                        xbmcgui.Dialog().ok("Error", "Autre que T411")
                     self.transmission.add_torrent(results[selected]['url'])
                 except:
                     xbmcgui.Dialog().ok(_(32000), _(32293))
