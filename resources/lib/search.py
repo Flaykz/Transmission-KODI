@@ -3,6 +3,7 @@ import re
 import socket
 import requests
 import json
+from transmissionrpc.t411 import T411 as t411
 from urllib2 import urlopen, Request, URLError, HTTPError
 from urllib import quote, quote_plus, urlencode
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
@@ -290,36 +291,11 @@ class GetStrike(Search):
 
 class T411(Search):
     def __init__(self):
-        self.api_url = 'https://api.t411.in/%s'
-        self.api_file_credentials = 'api_credentials.json' 
-        try :
-            with open(self.api_file_credentials) as file_credentials :
-                self.user_credentials = json.loads(file_credentials.read())
-        except IOError as e :
-            print "no credentials files found"
-        except Exception as e :
-            print "Error while reading user credentials : %s." % e.message
-        #user = 'USER'
-        #password = 'PASSWORD'
-        #self._auth(user, password)
-
-    #def _auth(self, username, password) :
-    #    self.user_credentials = self.call('auth', {'username': username, 'password': password})
-
-    def call(self, method = '', params = None) :
-        if method == 'auth' :
-            req = requests.post(self.api_url % method, data=params)
-        #elif 'download' in method:
-        #    something to do
-        else :
-            req = requests.post(self.api_url % method, data=params, headers={'Authorization':self.user_credentials['token']})
-
-        if req.status_code == requests.codes.OK:
-            return req.json()  
+        self.t = t411()
 
     def search(self, query) :
         torrents = []
-        rep = self.call('torrents/search/%s' % query)
+        rep = self.t.search(query)
         for torrent in rep['torrents'] :
             torrents.append({"seeds":int(torrent['seeders']), "leechers":int(torrent['leechers']), "name":str(torrent['name']), "url":str(torrent['id'])})
         return torrents
