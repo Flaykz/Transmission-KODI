@@ -7,6 +7,7 @@ import threading
 import xbmc
 import xbmcgui
 from basictypes.bytes import Bytes
+from transmissionrpc.t411 import T411 as t411
 import transmissionrpc
 import search
 import common
@@ -156,10 +157,9 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
                 if selected < 0:
                     return
                 try:
-                    if (engine == search.T411) :
-                        xbmcgui.Dialog().ok("Error", "T411")
-                    else :
-                        xbmcgui.Dialog().ok("Error", "Autre que T411")
+                    if (selected == 10) :
+                        t = t411()
+                        results[selected]['url'] = t.download(results[selected]['url'])
                     self.transmission.add_torrent(results[selected]['url'])
                 except:
                     xbmcgui.Dialog().ok(_(32000), _(32293))
