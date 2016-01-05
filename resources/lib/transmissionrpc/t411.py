@@ -72,17 +72,12 @@ class T411(object):
             torrentid = os.path.basename(method)
             req = requests.get(API_URL % method, headers={'Authorization':self.user_credentials['token']})
             if req.status_code == requests.codes.OK :
-                try :
-                    req_json = req.json()
-                    if 'error' in req_json :
-                        raise T411Exception("Got an error response from t411 server : %s" % req_json['error']
-                except ValueError :
-                    torrent_data = ''
-                    for block in req.iter_content(1024) :
-                        if not block :
-                            break
-                        torrent_data += block
-                        return base64.b64encode(torrent_data)
+                torrent_data = ''
+                for block in req.iter_content(1024) :
+                    if not block :
+                        break
+                    torrent_data += block
+                return base64.b64encode(torrent_data)
         else :
             req = requests.post(API_URL % method, data=params, headers={'Authorization':self.user_credentials['token']})
 
