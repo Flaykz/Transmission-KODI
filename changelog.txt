@@ -1,3 +1,7 @@
+Version 0.8.0
+        * Updated code from XBMC to KODI
+        * Added T411 search
+        * Added CPASBIEN search
 Version 0.7.6
         * Updated transmissionrpc library to 0.11, including a patch for gzipped http responses
         * Fixed an issue listing torrents
