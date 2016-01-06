@@ -5,9 +5,8 @@ import socket
 import requests
 import json
 from transmissionrpc.t411 import T411 as t411
-from urllib2 import urlopen, Request, URLError, HTTPError
-from urllib import quote, quote_plus, urlencode
-from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
+from urllib import quote_plus
+from BeautifulSoup import BeautifulStoneSoup
 
 socket.setdefaulttimeout(15)
 
@@ -115,8 +114,13 @@ class L337x(Search):
             div = details.findNext('div')
             seeds = int(div.text)
             div = div.findNext('div')
-            f_link = urlopen(self.uri_prefix + details['href'])
-            soup_link = BeautifulStoneSoup(f_link.read())
+            try :
+                f_link = requests.get(self.uri_prefix + details['href'])
+            except :
+                raise Exception('something wrong')
+            if (f.status_code != requests.codes.ok) :
+                f.raise_for_status()
+            soup_link = BeautifulStoneSoup(f_link.text)
             link = soup_link.find('a', {'href': re.compile('^magnet:')})
             if not link:
                 continue
@@ -135,13 +139,23 @@ class YTS(Search):
 
     def search(self, terms):
         torrents = []
-        url = self.search_uri % quote(terms, '')
-        f = urlopen(url)
-        soup = BeautifulStoneSoup(f.read())
+        url = self.search_uri % quote_plus(terms)
+        try :
+            f = requests.get(url)
+        except :
+            raise Exception('something wrong')
+        if (f.status_code != requests.codes.ok) :
+            f.raise_for_status()
+        soup = BeautifulStoneSoup(f.text)
         for item in soup.findAll('item'):
             item_quality = item.link.text.rpartition('_')[2]
-            item_f = urlopen(item.link.text)
-            item_soup = BeautifulStoneSoup(item_f.read())
+            try :
+                item_f = requests.get(item.link.text)
+            except :
+                raise Exception('something wrong')
+            if (f.status_code != requests.codes.ok) :
+                f.raise_for_status()
+            item_soup = BeautifulStoneSoup(item_f.text)
             qualities = [s.text.strip() for s in
                          item_soup.findAll('span', {'class': re.compile('^tech-quality')})]
             q_index = qualities.index(item_quality)
@@ -162,7 +176,7 @@ class Lime(Search):
 
     def search(self, terms):
         torrents = []
-        url = self.search_uri % quote(terms)
+        url = self.search_uri % quote_plus(terms)
         try :
              f = requests.get(url)
         except :
@@ -188,7 +202,7 @@ class EZTV(Search):
 
     def search(self, terms):
         torrents = []
-        url = self.search_uri % quote(terms)
+        url = self.search_uri % quote_plus(terms)
         try :
              f = requests.get(url, headers=self.headers)
         except :
@@ -199,7 +213,7 @@ class EZTV(Search):
         for (c, item) in enumerate(soup.findAll('a', {'class': 'magnet'})):
             if c == 30: break
             info = item.findPrevious('a')
-            link = self.search_uri % quote(info['href'])
+            link = self.search_uri % quote_plus(info['href'])
             try :
                 item_f = requests.get(link, headers=self.headers)
             except :
@@ -225,33 +239,34 @@ class CPasBien(Search):
     def __init__(self):
         self.user_agent = 'Mozilla/5.0'
         self.search_uri = 'http://www.cpasbien.io/recherche/%s.html,trie-seeds-d'
+        self.headers = {'User-Agent': self.user_agent}
 
     def search(self, terms):
         torrents = []
-        url = self.search_uri % quote(terms)
-        req = Request(url)
-        req.add_header('User-Agent', self.user_agent)
-        f = urlopen(req)
-        if not f:
-            raise Exception('Cloudfare bloque la connexion ?')
-        else :
-            soup = BeautifulStoneSoup(f.read())
-            for item in soup.findAll('a', {'class':'titre'}):
-                name = item.text.strip()
-                url = item['href']
-                div = item.findNext('div')
-                poid = div.text
-                div = item.findNext('div').findNext('div')
-                seeds = int(div.text)
-                div = item.findNext('div').findNext('div').findNext('div')
-                leechers = int(div.text)
-                torrents.append({
-                    'url': url,
-                    'name': name,
-                    'seeds': seeds,
-                    'leechers': leechers,
-                })
-            return torrents
+        url = self.search_uri % quote_plus(terms)
+        try :
+             f = requests.get(url, headers=self.headers)
+        except :
+            raise Exception('something wrong')
+        if (f.status_code != requests.codes.ok) :
+            f.raise_for_status()
+        soup = BeautifulStoneSoup(f.text)
+        for item in soup.findAll('a', {'class':'titre'}):
+            name = item.text.strip()
+            url = item['href']
+            div = item.findNext('div')
+            poid = div.text
+            div = item.findNext('div').findNext('div')
+            seeds = int(div.text)
+            div = item.findNext('div').findNext('div').findNext('div')
+            leechers = int(div.text)
+            torrents.append({
+                'url': url,
+                'name': name,
+                'seeds': seeds,
+                'leechers': leechers,
+            })
+        return torrents
 ##        p = []
 ##        if terms.find(' ') :
 ##            p = terms.split(' ')
@@ -302,19 +317,18 @@ class CPasBien(Search):
 class GetStrike(Search):
     def __init__(self):
         self.search_uri = 'https://getstrike.net/api/torrents/search/?q=%s'
+        self.headers = {'User-Agent': 'Mozilla/5.0'}
 
     def search(self, terms):
         torrents = []
         url = self.search_uri % '+'.join(terms.split(' '))
-        hdr = {
-                    'User-Agent' : 'Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4',
-                    'Accept' : 'image/webp,*/*;q=0.8',
-                    'Accept-Language' : 'fr-FR,fr;q=0.8,en-US;q=0.6,en;q=0.4',
-                    'Connection' : 'keep-alive'
-                    }
-        req = Request(url, headers=hdr)
-        f = urlopen(req).read()
-        rep = json.loads(f)
+        try :
+             f = requests.get(url, headers=self.headers)
+        except :
+            raise Exception('something wrong')
+        if (f.status_code != requests.codes.ok) :
+            f.raise_for_status()
+        rep = json.loads(f.text)
         nbRes = rep[0]['results']
         for i in rep[1] :
             torrents.append({
@@ -333,12 +347,13 @@ class T411(Search):
         torrents = []
         rep = self.t.search(query)
         for torrent in rep['torrents'] :
-            torrents.append({"seeds":int(torrent['seeders']), "leechers":int(torrent['leechers']), "name":str(torrent['name']), "url":str(torrent['id'])})
+            torrents.append({"seeds":int(torrent['seeders']), "leechers":int(torrent['leechers']), "name":torrent['name'].encode('utf-8'), "url":torrent['id'].encode('utf-8')})
         return torrents
 
 if __name__ == '__main__':
     sites = [Mininova(), Kickass(), L337x(), Lime(), EZTV(), T411()]
-    terms = 'avatar'
+#    sites = [T411()] 
+    terms = 'apollo 13'
     if len(sys.argv) > 1:
         terms = sys.argv[1]
     print 'Searching for "' + terms + '"'
@@ -349,6 +364,6 @@ if __name__ == '__main__':
         counter = 0
         for torrent in torrents:
             counter = counter + 1
-            print "seeds :" + str(torrent['seeds']) + " leechers: " + str(torrent['leechers']) + " name: " + str(torrent['name']) + " url: " + str(torrent['url'])
+            print "seeds :" + str(torrent['seeds']) + " leechers: " + str(torrent['leechers']) + " name: " + torrent['name'].encode('utf-8') + " url: " + torrent['url'].encode('utf-8')
             if (counter == 3): 
                 break

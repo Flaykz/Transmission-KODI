@@ -2,7 +2,7 @@
 import getpass
 import json
 import requests
-import os, xbmc, xbmcgui
+
 HTTP_OK = 200
 API_URL = 'https://api.t411.in/%s'
 USER_FILE = 'user.json'
@@ -68,6 +68,15 @@ class T411(object):
         #call_params = {'url': API_URL % method, 'params': params}
         if method == 'auth' :
             req = requests.post(API_URL % method, data=params)
+        elif 'search' in method :
+            req = requests.post(API_URL % method, data=params, headers={'Authorization':self.user_credentials['token']})
+            if req.status_code == requests.codes.OK:
+                data = req.json()
+                data['torrents'].sort(key=lambda k: int(k['seeders']), reverse=True)
+                return data
+            else :
+                raise T411Exception('Error while sending %s request: HTTP %s' % \
+                    (method, req.status_code))
         elif 'download' in method :
             torrentid = os.path.basename(method)
             req = requests.get(API_URL % method, headers={'Authorization':self.user_credentials['token']})
@@ -80,11 +89,10 @@ class T411(object):
                 return base64.b64encode(torrent_data).decode('utf-8')
         else :
             req = requests.post(API_URL % method, data=params, headers={'Authorization':self.user_credentials['token']})
-
-        if req.status_code == requests.codes.OK:
-            return req.json()
-        else :
-            raise T411Exception('Error while sending %s request: HTTP %s' % \
+            if req.status_code == requests.codes.OK:
+                return req.json()
+            else :
+                raise T411Exception('Error while sending %s request: HTTP %s' % \
                     (method, req.status_code))
 
     def me(self) :
@@ -113,7 +121,7 @@ class T411(object):
 
     def search(self, query) :
         """ Search a torrent """
-        return self.call('torrents/search/%s' % query)
+        return self.call('torrents/search/%s?limit=50' % query)
 
     def top100(self) :
         return self.call('torrents/top/100')
