@@ -163,7 +163,8 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
                         self.transmission.add(data)
                     else :
                         self.transmission.add_torrent(results[selected]['url'])
-                except:
+                except Exception as e:
+                    #xbmcgui.Dialog().ok("test", e.message)
                     xbmcgui.Dialog().ok(_(32000), _(32293))
                     return
         if (controlID == 112):

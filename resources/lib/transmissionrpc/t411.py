@@ -2,6 +2,8 @@
 import getpass
 import json
 import requests
+import os
+import base64
 
 HTTP_OK = 200
 API_URL = 'https://api.t411.in/%s'
@@ -90,8 +92,7 @@ class T411(object):
                 data['torrents'].sort(key=lambda k: int(k['seeders']), reverse=True)
                 return data
             else :
-                raise T411Exception('Error while sending %s request: HTTP %s' % \
-                    (method, req.status_code))
+                raise T411Exception('Error while sending %s request: HTTP %s' % (method, req.status_code))
         elif 'download' in method :
             torrentid = os.path.basename(method)
             req = requests.get(API_URL % method, headers={'Authorization':self.user_credentials['token']})
@@ -104,11 +105,11 @@ class T411(object):
                 return base64.b64encode(torrent_data).decode('utf-8')
         else :
             req = requests.post(API_URL % method, data=params, headers={'Authorization':self.user_credentials['token']})
-            if req.status_code == requests.codes.OK:
-                return req.json()
-            else :
-                raise T411Exception('Error while sending %s request: HTTP %s' % \
-                    (method, req.status_code))
+
+        if req.status_code == requests.codes.OK :
+            return req.json()
+        else :
+            raise T411Exception('Error while sending %s request: HTTP %s' % (method, req.status_code))
 
     def me(self) :
         """ Get personal informations """
