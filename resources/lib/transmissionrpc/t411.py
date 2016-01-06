@@ -49,6 +49,21 @@ class T411(object):
         except Exception as e:
             raise T411Exception('Error while reading user credentials: %s.'\
                     % e.message)
+        #On vient chercher le cid=categorie ID de "film" et "Série TV"
+        self.cid1 = None
+        self.cid2 = None
+        req = self.categories()
+        def searchkey(dic, id) :
+            for key, value in dic.iteritems() :
+                if isinstance(value, dict):
+                    searchkey(value, key)
+                else :
+                    if (key.encode('utf-8') == "name" and (value.encode('utf-8') == "Film" or value.encode('utf-8') == "Série TV")) :
+                        if self.cid1 == None :
+                            self.cid1 = id
+                        else :
+                            self.cid2 = id
+        searchkey(req, "0")
 
     def _auth(self, username, password) :
         """ Authentificate user and store token """
@@ -119,9 +134,9 @@ class T411(object):
         """ Download a torrent """
         return self.call('torrents/download/%s' % torrent_id)
 
-    def search(self, query) :
+    def search(self, query, limit=50) :
         """ Search a torrent """
-        return self.call('torrents/search/%s?limit=50' % query)
+        return self.call('torrents/search/%s?limit=%i&cat=%i&cat=%i' % (query, limit, int(self.cid1), int(self.cid2)))
 
     def top100(self) :
         return self.call('torrents/top/100')

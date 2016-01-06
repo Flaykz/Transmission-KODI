@@ -351,8 +351,8 @@ class T411(Search):
         return torrents
 
 if __name__ == '__main__':
-    sites = [Mininova(), Kickass(), L337x(), Lime(), EZTV(), T411()]
-#    sites = [T411()] 
+#    sites = [Mininova(), Kickass(), L337x(), Lime(), EZTV(), T411()]
+    sites = [T411()] 
     terms = 'apollo 13'
     if len(sys.argv) > 1:
         terms = sys.argv[1]
