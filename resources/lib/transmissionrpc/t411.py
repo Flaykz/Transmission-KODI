@@ -8,6 +8,7 @@ import base64
 HTTP_OK = 200
 API_URL = 'https://api.t411.in/%s'
 USER_FILE = 'user.json'
+CID_FILM_VIDEO = "210"
 
 class T411Exception(BaseException):
     pass
@@ -51,21 +52,6 @@ class T411(object):
         except Exception as e:
             raise T411Exception('Error while reading user credentials: %s.'\
                     % e.message)
-        #On vient chercher le cid=categorie ID de "film" et "Série TV"
-        self.cid1 = None
-        self.cid2 = None
-        req = self.categories()
-        def searchkey(dic, id) :
-            for key, value in dic.iteritems() :
-                if isinstance(value, dict):
-                    searchkey(value, key)
-                else :
-                    if (key.encode('utf-8') == "name" and (value.encode('utf-8') == "Film" or value.encode('utf-8') == "Série TV")) :
-                        if self.cid1 == None :
-                            self.cid1 = id
-                        else :
-                            self.cid2 = id
-        searchkey(req, "0")
 
     def _auth(self, username, password) :
         """ Authentificate user and store token """
@@ -86,7 +72,8 @@ class T411(object):
         if method == 'auth' :
             req = requests.post(API_URL % method, data=params)
         elif 'search' in method :
-            req = requests.post(API_URL % method, data=params, headers={'Authorization':self.user_credentials['token']})
+            req = requests.post(API_URL % method, params=params, headers={'Authorization':self.user_credentials['token']})
+            print req.url # Pour debug
             if req.status_code == requests.codes.OK:
                 data = req.json()
                 data['torrents'].sort(key=lambda k: int(k['seeders']), reverse=True)
@@ -137,7 +124,8 @@ class T411(object):
 
     def search(self, query, limit=50) :
         """ Search a torrent """
-        return self.call('torrents/search/%s?limit=%i&cat=%i&cat=%i' % (query, limit, int(self.cid1), int(self.cid2)))
+        payload = {"limit": limit, "cid": CID_FILM_VIDEO}
+        return self.call('torrents/search/%s' % query, payload)
 
     def top100(self) :
         return self.call('torrents/top/100')
@@ -161,6 +149,62 @@ class T411(object):
     def delete_bookmark(self, torrent_id) :
         """ Delete a bookmark """
         return self.call('bookmarks/delete/%s' % torrent_id)
+
+    def print_term_cat(self) :
+        # On vient chercher les parametres de recherches personnalisées
+        # CID = Catégorie (Audio - eBook - Emulation - Jeu vidéo - GPS - Application - Film/Vidéo)
+        # CAT = Sous Catégorie (Film/Vidéo : Animation - Concert - Documentaire - Emission TV - Film - Série TV - Spectacle)
+        # term* = tag (Film/Série - Langue : Anglais - VOSTFR - Multi (Français inclus) - Français (VFF/Truefrench)
+        # term* = tag (Film/Série - Type : 2D (Standard) - 3D Converti (Post-Production) - 3D Natif (Production)
+        # term* = tag (Série TV - Episode : Saison complète - Episode XX)
+        # term* = tag (Série TV - Saison : Série intégrale - Saison XX)
+        req_cat = self.categories()
+        req_term = self.terms()
+        cat = []
+        term = []
+        def searchkeycat(dic, id) :
+            for key, value in dic.iteritems() :
+                if isinstance(value, dict):
+                    searchkeycat(value, key)
+                else :
+                    if (key.encode('utf-8') == "name" and value.encode('utf-8') == "Film") :
+                        cat.append({value.encode('utf-8'): str(id)})
+                    if (key.encode('utf-8') == "name" and  value.encode('utf-8') == "Série TV") :
+                        cat.append({value.encode('utf-8'): str(id)})
+                    if (key.encode('utf-8') == "name" and value.encode('utf-8') == "Film/Vidéo") :
+                        cat.append({value.encode('utf-8'): str(id)})
+        def searchkeyterm(dic, id) :
+            for key, value in dic.iteritems() :
+                if isinstance(value, dict):
+                    if 'type' in value :
+                        searchkeyterm(value, str(id) + " - " + value['type'].encode('utf-8') + "(" + str(key) + ")")
+                    else :
+                        searchkeyterm(value, str(id) + " - " + str(key))
+                else :
+                    tmp = str(id) + " - " + str(key)
+                    if (value.encode('utf-8') == "Anglais") :
+                        term.append({value.encode('utf-8'): tmp})
+                    if (value.encode('utf-8') == "VOSTFR") :
+                        term.append({value.encode('utf-8'): tmp})
+                    if (value.encode('utf-8') == "Français (VFF/Truefrench)") :
+                        term.append({value.encode('utf-8'): tmp})
+                    if (value.encode('utf-8') == "Multi (Français inclus)") :
+                        term.append({value.encode('utf-8'): tmp})
+                    if (value.encode('utf-8') == "2D (Standard)") :
+                        term.append({value.encode('utf-8'): tmp})
+                    if (value.encode('utf-8') == "3D Converti (Post-Production)") :
+                        term.append({value.encode('utf-8'): tmp})
+                    if (value.encode('utf-8') == "3D Natif (Production)") :
+                        term.append({value.encode('utf-8'): tmp})
+        searchkeycat(req_cat, "0")
+        cat.sort()
+        for i in cat :
+            print i
+        searchkeyterm(req_term, "0")        
+        term.sort()
+        for i in term :
+            print i
+
 if __name__ == "__main__" :
     t411 = T411() 
-    print t411.top100()
+    t411.print_term_cat()
