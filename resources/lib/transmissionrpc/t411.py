@@ -76,6 +76,7 @@ class T411(object):
             print req.url # Pour debug
             if req.status_code == requests.codes.OK:
                 data = req.json()
+                print data
                 data['torrents'].sort(key=lambda k: int(k['seeders']), reverse=True)
                 return data
             else :
