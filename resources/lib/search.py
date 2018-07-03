@@ -7,6 +7,8 @@ import json
 from transmissionrpc.t411 import T411 as t411
 from urllib import quote_plus
 from BeautifulSoup import BeautifulStoneSoup
+from BeautifulSoup import BeautifulSoup
+import cfscrape
 
 socket.setdefaulttimeout(15)
 
@@ -234,126 +236,51 @@ class EZTV(Search):
             })
         return torrents
 
-# Error 503
-class CPasBien(Search):
+class Torrent9(Search):
     def __init__(self):
-        self.user_agent = 'Mozilla/5.0'
-        self.search_uri = 'http://www.cpasbien.io/recherche/%s.html,trie-seeds-d'
-        self.headers = {'User-Agent': self.user_agent}
-
-    def search(self, terms):
-        torrents = []
-        url = self.search_uri % quote_plus(terms)
-        try :
-             f = requests.get(url, headers=self.headers)
-        except :
-            raise Exception('something wrong')
-        if (f.status_code != requests.codes.ok) :
-            f.raise_for_status()
-        soup = BeautifulStoneSoup(f.text)
-        for item in soup.findAll('a', {'class':'titre'}):
-            name = item.text.strip()
-            url = item['href']
-            div = item.findNext('div')
-            poid = div.text
-            div = item.findNext('div').findNext('div')
-            seeds = int(div.text)
-            div = item.findNext('div').findNext('div').findNext('div')
-            leechers = int(div.text)
-            torrents.append({
-                'url': url,
-                'name': name,
-                'seeds': seeds,
-                'leechers': leechers,
-            })
-        return torrents
-##        p = []
-##        if terms.find(' ') :
-##            p = terms.split(' ')
-##        else :
-##            p.append(terms)
-##        if p[0] == "series" or p[0] == "films" :
-##            if len(p) == 1:
-##                self.search_uri = 'http://www.cpasbien.pw/view_cat.php?categorie=%s'
-##                url = self.search_uri % p[0]
-##            else :
-##                self.search_uri = 'http://www.cpasbien.pw/view_cat.php?categorie=%s&page=%s'
-##                url = self.search_uri % (p[0],p[1])
-##        else :
-##            url = self.search_uri % '-'.join(terms.split(' '))
-##		hdr = {
-##			'User-Agent' : 'Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4',
-##			'Accept' : 'image/webp,*/*;q=0.8',
-##			'Accept-Language' : 'fr-FR,fr;q=0.8,en-US;q=0.6,en;q=0.4',
-##			'Connection' : 'keep-alive'
-##		}
-##        req = Request(url, headers=hdr)
-##        #f = urlopen(req).read()
-##        #f = urlopen(url)
-##		f = urlopen(req)
-##        soup = BeautifulSoup(f.read())
-##        for item in soup.findAll('a', {'class':'titre'}):
-##            name = item.text.strip()
-##            url = item['href']
-##            div = item.findNext('div')
-##            poid = div.text
-##            div = item.findNext('div').findNext('div')
-##            seeds = int(div.text)
-##            div = item.findNext('div').findNext('div').findNext('div')
-##            leechers = int(div.text)
-##			req = Request(url, headers=hdr)
-##            f2 = urlopen(req)
-##            soup2 = BeautifulSoup(f2.read())
-##            url = 'http://www.cpasbien.pw' + soup2.find('a', {'id':'telecharger'})['href']
-##            torrents.append({
-##                'url': url,
-##                'name': name,
-##                'seeds': seeds,
-##                'leechers': leechers,
-##            })
-##        return torrents
+        self.url = "https://www.torrent9.blue"
+        self.path = "/search_torrent/"
+        self.error = u"Aucun torrents disponibles correspondant à votre recherche :("
+        scraper = cfscrape.create_scraper(delay=5)
+        self.tokens, self.userAgent = scraper.get_tokens(self.url)
+        self.headers = {'User-Agent': self.userAgent}
         
-# Error 500
-class GetStrike(Search):
-    def __init__(self):
-        self.search_uri = 'https://getstrike.net/api/torrents/search/?q=%s'
-        self.headers = {'User-Agent': 'Mozilla/5.0'}
-
     def search(self, terms):
         torrents = []
-        url = self.search_uri % '+'.join(terms.split(' '))
+        search = terms
+        search = search.replace("-", "")
+        search = search.replace(" ", "-")
+        search = search + ".html"
         try :
-             f = requests.get(url, headers=self.headers)
-        except :
+            f = requests.get(self.url + self.path + search, cookies=self.tokens, headers=self.headers)
+        except:
             raise Exception('something wrong')
         if (f.status_code != requests.codes.ok) :
             f.raise_for_status()
-        rep = json.loads(f.text)
-        nbRes = rep[0]['results']
-        for i in rep[1] :
-            torrents.append({
-                'url': i['download_link'],
-                'name': i['torrent_title'],
-                'seeds': i['seeds'],
-                'leechers': i['leechers'],
-            })
+        response = f.text
+        if self.error in response:
+            raise Exception("no torrent")
+        else:
+            soup = BeautifulSoup(response, 'html.parser')
+            table = soup.find('table', {"class" : "table table-striped table-bordered cust-table"})
+            tr = table.find_all("tr")
+            for torrent in tr:
+                attributs = torrent.find_all("td")
+                f2 = requests.get(self.url + attributs[0].find("a")['href'], cookies=self.tokens, headers=self.headers)
+                soup = BeautifulSoup(f2.text, 'html.parser')
+                dl = soup.find('a', {'class': "btn btn-danger download"})
+                torrents.append({
+                    'url': self.url + dl['href'],
+                    'name': attributs[0].find("a").text,
+                    'seeds': int(attributs[2].text),
+                    'leechers': int(attributs[3].text),
+                })
         return torrents
-
-class T411(Search):
-    def __init__(self):
-        self.t = t411()
-
-    def search(self, query) :
-        torrents = []
-        rep = self.t.search(query)
-        for torrent in rep['torrents'] :
-            torrents.append({"seeds":int(torrent['seeders']), "leechers":int(torrent['leechers']), "name":torrent['name'].encode('utf-8'), "url":torrent['id'].encode('utf-8')})
-        return torrents
-
+        
 if __name__ == '__main__':
 #    sites = [Mininova(), Kickass(), L337x(), Lime(), EZTV(), T411()]
-    sites = [T411()] 
-    terms = 'apollo 13'
+    sites = [Torrent9()] 
+    terms = 'Avenger'
     if len(sys.argv) > 1:
         terms = sys.argv[1]
     print 'Searching for "' + terms + '"'
