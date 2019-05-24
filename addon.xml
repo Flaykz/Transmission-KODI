@@ -8,6 +8,8 @@
     <import addon="script.module.simplejson" version="3.3.0"/>
     <import addon="script.module.beautifulsoup" version="3.0.8" />
     <import addon="script.module.six" version="1.5.2" />
+    <import addon="script.module.requests" version="2.18.4"/>
+    <import addon="script.module.cfscrape" version="1.6.8"/>
   </requires>
   <extension point="xbmc.python.script"
              library="default.py" />

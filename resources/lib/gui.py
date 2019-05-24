@@ -7,7 +7,6 @@ import threading
 import xbmc
 import xbmcgui
 from basictypes.bytes import Bytes
-from transmissionrpc.t411 import T411 as t411
 import transmissionrpc
 import search
 import common
@@ -112,16 +111,7 @@ class TransmissionGUI(xbmcgui.WindowXMLDialog):
             # Add torrent
             engines = [
                 (_(32200), None),
-                (_(32202), search.TPB),
-                (_(32203), search.Mininova),
-                (_(32204), search.Kickass),
-                (_(32205), search.L337x),
-                (_(32206), search.YTS),
-                (_(32207), search.Lime),
-                (_(32208), search.EZTV),
-                (_(32209), search.CPasBien),
-                (_(32210), search.GetStrike),
-                (_(32211), search.T411),
+                (_(32209), search.Torrent9),
             ]
             selected = xbmcgui.Dialog().select(_(32000), [i[0] for i in engines])
             if selected < 0:

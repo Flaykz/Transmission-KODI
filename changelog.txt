@@ -1,3 +1,8 @@
+Version 0.9.0
+		* Delete T411
+		* Delete all useless providers
+		* Add Torrent9
+		* Add Cloudflare Scrapper
 Version 0.8.0
         * Updated code from XBMC to KODI
         * Added T411 search
